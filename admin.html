@@ -24,7 +24,7 @@
     <p>© 2024 SHOP. All rights reserved.</p>
   </footer>
 
-  <script src="products-data.js"></script>
+  <script src="supabase-config.js"></script>
   <script src="app.js"></script>
   <script>
     renderNav();
@@ -35,8 +35,8 @@
       location.href = 'index.html';
     }
 
-    function renderOrders() {
-      const orders = getOrders();
+    async function renderOrders() {
+      const orders = await getOrders();
       const el = document.getElementById('order-list');
 
       if (orders.length === 0) {

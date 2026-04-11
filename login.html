@@ -39,7 +39,7 @@
     </div>
   </div>
 
-  <script src="products-data.js"></script>
+  <script src="supabase-config.js"></script>
   <script src="app.js"></script>
   <script>
     renderNav();
@@ -52,10 +52,11 @@
       if (e.key === 'Enter') handleLogin();
     });
 
-    function handleLogin() {
+    async function handleLogin() {
       const id = document.getElementById('input-id').value.trim();
       const pw = document.getElementById('input-pw').value;
       const errorEl = document.getElementById('login-error');
+      const btn = document.querySelector('.btn-primary');
 
       if (!id || !pw) {
         errorEl.textContent = '아이디와 비밀번호를 입력해주세요.';
@@ -63,12 +64,17 @@
         return;
       }
 
-      const result = loginUser(id, pw);
+      btn.disabled = true;
+      btn.textContent = '확인 중...';
+
+      const result = await loginUser(id, pw);
       if (result.success) {
         location.href = 'index.html';
       } else {
         errorEl.textContent = result.message;
         errorEl.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = '로그인';
       }
     }
   </script>

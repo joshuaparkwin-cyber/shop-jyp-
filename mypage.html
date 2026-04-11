@@ -101,13 +101,14 @@
     document.getElementById('input-phone').value = user.phone || '';
     document.getElementById('input-address').value = user.address || '';
 
-    function handleUpdateInfo() {
+    async function handleUpdateInfo() {
       const name    = document.getElementById('input-name').value.trim();
       const email   = document.getElementById('input-email').value.trim();
       const phone   = document.getElementById('input-phone').value.trim();
       const address = document.getElementById('input-address').value.trim();
       const errorEl = document.getElementById('info-error');
       const successEl = document.getElementById('info-success');
+      const btn = document.querySelector('#info-error ~ p ~ button, .auth-box button');
 
       if (!name) {
         errorEl.textContent = '이름을 입력해주세요.';
@@ -116,15 +117,19 @@
         return;
       }
       errorEl.style.display = 'none';
+      successEl.style.display = 'none';
 
-      const result = updateUserInfo({ name, email, phone, address });
+      const result = await updateUserInfo({ name, email, phone, address });
       if (result.success) {
         successEl.style.display = 'block';
         renderNav();
+      } else {
+        errorEl.textContent = result.message;
+        errorEl.style.display = 'block';
       }
     }
 
-    function handleChangePw() {
+    async function handleChangePw() {
       const curPw  = document.getElementById('input-cur-pw').value;
       const newPw  = document.getElementById('input-new-pw').value;
       const newPw2 = document.getElementById('input-new-pw2').value;
@@ -150,7 +155,7 @@
         return;
       }
 
-      const result = changePassword(curPw, newPw);
+      const result = await changePassword(curPw, newPw);
       if (result.success) {
         successEl.style.display = 'block';
         document.getElementById('input-cur-pw').value = '';

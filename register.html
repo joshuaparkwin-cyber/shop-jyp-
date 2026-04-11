@@ -67,7 +67,7 @@
     </div>
   </div>
 
-  <script src="products-data.js"></script>
+  <script src="supabase-config.js"></script>
   <script src="app.js"></script>
   <script>
     renderNav();
@@ -81,7 +81,7 @@
       el.style.display = msg ? 'block' : 'none';
     }
 
-    function handleRegister() {
+    async function handleRegister() {
       const id      = document.getElementById('input-id').value.trim();
       const pw      = document.getElementById('input-pw').value;
       const pw2     = document.getElementById('input-pw2').value;
@@ -113,12 +113,18 @@
 
       if (!valid) return;
 
-      const result = registerUser(id, pw, { name, email, phone, address });
+      const btn = document.querySelector('.btn-primary');
+      btn.disabled = true;
+      btn.textContent = '처리 중...';
+
+      const result = await registerUser(id, pw, { name, email, phone, address });
       if (result.success) {
         alert('회원가입이 완료되었습니다! 로그인해주세요.');
         location.href = 'login.html';
       } else {
         showError('error-id', result.message);
+        btn.disabled = false;
+        btn.textContent = '가입하기';
       }
     }
   </script>
