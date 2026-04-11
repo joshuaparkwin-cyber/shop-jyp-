@@ -1,0 +1,9 @@
+# 토큰, 비밀 정보
+.env
+
+# 봇이 자동 생성하는 파일
+products.json
+
+# 시스템 파일
+.DS_Store
+Thumbs.db
