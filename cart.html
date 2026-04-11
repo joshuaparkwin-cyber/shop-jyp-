@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>장바구니 — SHOP</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <div class="header-inner">
+      <a href="index.html" class="logo">SHOP</a>
+      <nav id="main-nav"></nav>
+    </div>
+  </header>
+
+  <div class="cart-container">
+    <h2 class="section-title">장바구니</h2>
+    <div id="cart-items"></div>
+    <div id="cart-summary"></div>
+  </div>
+
+  <footer>
+    <p>© 2024 SHOP. All rights reserved.</p>
+  </footer>
+
+  <script src="app.js"></script>
+  <script>
+    function renderCart() {
+      const cart = getCart();
+      const itemsEl = document.getElementById('cart-items');
+      const summaryEl = document.getElementById('cart-summary');
+
+      if (cart.length === 0) {
+        itemsEl.innerHTML = '<div class="empty-cart">장바구니가 비어 있습니다.</div>';
+        summaryEl.innerHTML = '';
+        updateCartCount();
+        return;
+      }
+
+      itemsEl.innerHTML = cart.map(item => `
+        <div class="cart-item">
+          <div class="cart-item-img" style="background-color: ${item.color}"></div>
+          <div class="cart-item-info">
+            <p class="cart-item-name">${item.name}</p>
+            <p class="cart-item-price">${item.price.toLocaleString()}원 × ${item.qty}개</p>
+          </div>
+          <button class="cart-item-remove" onclick="removeItem(${item.id})">✕</button>
+        </div>
+      `).join('');
+
+      const total = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+      summaryEl.innerHTML = `
+        <div class="cart-summary">
+          <p class="cart-total-text">총 금액 &nbsp; ${total.toLocaleString()}원</p>
+          <button class="btn btn-primary" onclick="handlePurchase()">구매하기</button>
+        </div>
+      `;
+
+      updateCartCount();
+    }
+
+    function removeItem(id) {
+      removeFromCart(id);
+      renderCart();
+    }
+
+    function handlePurchase() {
+      if (!getCurrentUser()) {
+        alert('로그인 후 구매하실 수 있습니다.');
+        location.href = 'login.html';
+        return;
+      }
+      if (saveOrder()) {
+        alert('구매가 완료되었습니다!');
+        renderCart();
+      }
+    }
+
+    renderNav();
+    renderCart();
+  </script>
+
+</body>
+</html>

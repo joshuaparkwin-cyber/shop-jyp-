@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>구매 목록 — SHOP 관리자</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <div class="header-inner">
+      <a href="index.html" class="logo">SHOP</a>
+      <nav id="main-nav"></nav>
+    </div>
+  </header>
+
+  <div class="admin-container">
+    <h2 class="section-title">구매 목록</h2>
+    <div id="order-list"></div>
+  </div>
+
+  <footer>
+    <p>© 2024 SHOP. All rights reserved.</p>
+  </footer>
+
+  <script src="app.js"></script>
+  <script>
+    renderNav();
+
+    // 관리자가 아니면 메인으로 이동
+    if (!isAdmin()) {
+      alert('관리자만 접근할 수 있습니다.');
+      location.href = 'index.html';
+    }
+
+    function renderOrders() {
+      const orders = getOrders();
+      const el = document.getElementById('order-list');
+
+      if (orders.length === 0) {
+        el.innerHTML = '<div class="empty-admin">아직 구매 내역이 없습니다.</div>';
+        return;
+      }
+
+      // 최신 주문이 위에 오도록 정렬
+      const sorted = [...orders].reverse();
+
+      el.innerHTML = `
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>구매일시</th>
+              <th>구매자</th>
+              <th>아이디</th>
+              <th>구매 상품</th>
+              <th>총 금액</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${sorted.map(order => `
+              <tr>
+                <td>${order.date}</td>
+                <td>${order.userName}</td>
+                <td>${order.userId}</td>
+                <td class="order-items">
+                  ${order.items.map(item =>
+                    `${item.name} × ${item.qty}개 (${(item.price * item.qty).toLocaleString()}원)`
+                  ).join('<br>')}
+                </td>
+                <td class="order-total">${order.total.toLocaleString()}원</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    renderOrders();
+  </script>
+
+</body>
+</html>
