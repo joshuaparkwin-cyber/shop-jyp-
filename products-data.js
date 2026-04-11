@@ -8,4 +8,5 @@ const products = [
   { id: 7, name: '상품 7', price: 22000, color: '#d0d0d0', desc: '정성껏 만든 상품입니다.' },
   { id: 8, name: '상품 8', price: 28000, color: '#cacaca', desc: '한정판 상품입니다.' },
   { id: 10, name: '테스트상품', price: 9999, color: '#e0e0e0', desc: '테스트용입니다' },
+  { id: 11, name: '테스트상품', price: 11111, color: '#e0e0e0', desc: '테스트용입니다' },
 ];

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>마이페이지 — SHOP</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <div class="header-inner">
+      <a href="index.html" class="logo">SHOP</a>
+      <nav id="main-nav"></nav>
+    </div>
+  </header>
+
+  <div class="auth-page" style="align-items: flex-start; padding-top: 56px;">
+    <div style="width: 100%; max-width: 480px;">
+
+      <!-- 회원정보 수정 -->
+      <div class="auth-box" style="margin-bottom: 20px;">
+        <h1 class="auth-title">회원정보 수정</h1>
+
+        <div class="form-group">
+          <label class="form-label">아이디</label>
+          <input class="form-input" id="show-id" type="text" disabled style="background:#f5f5f5; color:#999;">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="input-name">이름</label>
+          <input class="form-input" id="input-name" type="text">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="input-email">이메일</label>
+          <input class="form-input" id="input-email" type="email">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="input-phone">전화번호</label>
+          <input class="form-input" id="input-phone" type="tel">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="input-address">주소</label>
+          <input class="form-input" id="input-address" type="text">
+        </div>
+
+        <p class="form-error" id="info-error"></p>
+        <p style="font-size:13px; color:#2a9d5c; margin-top:8px; display:none;" id="info-success">저장되었습니다.</p>
+
+        <button class="btn btn-primary" style="width:100%; margin-top:8px;" onclick="handleUpdateInfo()">저장하기</button>
+      </div>
+
+      <!-- 비밀번호 변경 -->
+      <div class="auth-box">
+        <h1 class="auth-title">비밀번호 변경</h1>
+
+        <div class="form-group">
+          <label class="form-label" for="input-cur-pw">현재 비밀번호</label>
+          <input class="form-input" id="input-cur-pw" type="password" placeholder="현재 비밀번호">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="input-new-pw">새 비밀번호</label>
+          <input class="form-input" id="input-new-pw" type="password" placeholder="6자 이상">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="input-new-pw2">새 비밀번호 확인</label>
+          <input class="form-input" id="input-new-pw2" type="password" placeholder="새 비밀번호 재입력">
+        </div>
+
+        <p class="form-error" id="pw-error"></p>
+        <p style="font-size:13px; color:#2a9d5c; margin-top:8px; display:none;" id="pw-success">비밀번호가 변경되었습니다.</p>
+
+        <button class="btn btn-primary" style="width:100%; margin-top:8px;" onclick="handleChangePw()">변경하기</button>
+      </div>
+
+    </div>
+  </div>
+
+  <footer>
+    <p>© 2024 SHOP. All rights reserved.</p>
+  </footer>
+
+  <script src="supabase-config.js"></script>
+  <script src="app.js"></script>
+  <script>
+    renderNav();
+
+    // 비로그인 시 메인으로
+    const user = getCurrentUser();
+    if (!user) location.href = 'index.html';
+
+    // 현재 정보 채우기
+    document.getElementById('show-id').value = user.id;
+    document.getElementById('input-name').value = user.name || '';
+    document.getElementById('input-email').value = user.email || '';
+    document.getElementById('input-phone').value = user.phone || '';
+    document.getElementById('input-address').value = user.address || '';
+
+    function handleUpdateInfo() {
+      const name    = document.getElementById('input-name').value.trim();
+      const email   = document.getElementById('input-email').value.trim();
+      const phone   = document.getElementById('input-phone').value.trim();
+      const address = document.getElementById('input-address').value.trim();
+      const errorEl = document.getElementById('info-error');
+      const successEl = document.getElementById('info-success');
+
+      if (!name) {
+        errorEl.textContent = '이름을 입력해주세요.';
+        errorEl.style.display = 'block';
+        successEl.style.display = 'none';
+        return;
+      }
+      errorEl.style.display = 'none';
+
+      const result = updateUserInfo({ name, email, phone, address });
+      if (result.success) {
+        successEl.style.display = 'block';
+        renderNav();
+      }
+    }
+
+    function handleChangePw() {
+      const curPw  = document.getElementById('input-cur-pw').value;
+      const newPw  = document.getElementById('input-new-pw').value;
+      const newPw2 = document.getElementById('input-new-pw2').value;
+      const errorEl = document.getElementById('pw-error');
+      const successEl = document.getElementById('pw-success');
+
+      errorEl.style.display = 'none';
+      successEl.style.display = 'none';
+
+      if (!curPw || !newPw || !newPw2) {
+        errorEl.textContent = '모든 항목을 입력해주세요.';
+        errorEl.style.display = 'block';
+        return;
+      }
+      if (newPw.length < 6) {
+        errorEl.textContent = '새 비밀번호는 6자 이상이어야 합니다.';
+        errorEl.style.display = 'block';
+        return;
+      }
+      if (newPw !== newPw2) {
+        errorEl.textContent = '새 비밀번호가 일치하지 않습니다.';
+        errorEl.style.display = 'block';
+        return;
+      }
+
+      const result = changePassword(curPw, newPw);
+      if (result.success) {
+        successEl.style.display = 'block';
+        document.getElementById('input-cur-pw').value = '';
+        document.getElementById('input-new-pw').value = '';
+        document.getElementById('input-new-pw2').value = '';
+      } else {
+        errorEl.textContent = result.message;
+        errorEl.style.display = 'block';
+      }
+    }
+  </script>
+
+</body>
+</html>

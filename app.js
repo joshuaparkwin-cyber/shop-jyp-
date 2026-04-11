@@ -48,6 +48,27 @@ function logoutUser() {
   location.href = 'index.html';
 }
 
+function updateUserInfo(newInfo) {
+  const user = getCurrentUser();
+  const users = getUsers();
+  if (!users[user.id]) return { success: false, message: '사용자를 찾을 수 없습니다.' };
+  users[user.id] = { ...users[user.id], ...newInfo };
+  localStorage.setItem('users', JSON.stringify(users));
+  const { password: _pw, ...info } = users[user.id];
+  sessionStorage.setItem('currentUser', JSON.stringify({ id: user.id, ...info }));
+  return { success: true };
+}
+
+function changePassword(currentPw, newPw) {
+  const user = getCurrentUser();
+  const users = getUsers();
+  if (!users[user.id]) return { success: false, message: '사용자를 찾을 수 없습니다.' };
+  if (users[user.id].password !== currentPw) return { success: false, message: '현재 비밀번호가 올바르지 않습니다.' };
+  users[user.id].password = newPw;
+  localStorage.setItem('users', JSON.stringify(users));
+  return { success: true };
+}
+
 // ── 헤더 네비게이션 렌더링 ──
 function renderNav() {
   const nav = document.getElementById('main-nav');
@@ -64,7 +85,7 @@ function renderNav() {
     nav.innerHTML = `
       <a href="index.html">홈</a>
       <a href="cart.html">장바구니 <span id="cart-count"></span></a>
-      <span class="nav-greeting">${user.name}님</span>
+      <a href="mypage.html">${user.name}님</a>
       <a href="#" class="nav-logout" onclick="logoutUser(); return false;">로그아웃</a>
     `;
   } else {
