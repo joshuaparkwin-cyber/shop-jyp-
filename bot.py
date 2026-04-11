@@ -1,15 +1,14 @@
 import requests
-import json
 import time
 import os
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# .env 파일에서 토큰 읽기
+# ── 환경변수 로드 ──
 def load_env():
     env_path = os.path.join(BASE_DIR, ".env")
     if not os.path.exists(env_path):
-        raise FileNotFoundError(".env 파일이 없습니다. .env 파일에 TELEGRAM_TOKEN을 입력해주세요.")
+        return  # Railway에서는 환경변수가 직접 주입됨
     with open(env_path, encoding="utf-8") as f:
         for line in f:
             line = line.strip()
@@ -18,45 +17,52 @@ def load_env():
                 os.environ[key.strip()] = value.strip()
 
 load_env()
-TOKEN = os.environ.get("TELEGRAM_TOKEN", "")
-API_URL = f"https://api.telegram.org/bot{TOKEN}"
-PRODUCTS_JSON = os.path.join(BASE_DIR, "products.json")
-PRODUCTS_JS   = os.path.join(BASE_DIR, "products-data.js")
+TOKEN       = os.environ.get("TELEGRAM_TOKEN", "")
+SB_URL      = os.environ.get("SUPABASE_URL", "")
+SB_KEY      = os.environ.get("SUPABASE_KEY", "")
+API_URL     = f"https://api.telegram.org/bot{TOKEN}"
 
 DEFAULT_PRODUCTS = [
-    {"id": 1, "name": "상품 1", "price": 12000, "color": "#e8e8e8", "desc": "깔끔하고 세련된 디자인의 상품입니다."},
-    {"id": 2, "name": "상품 2", "price": 18000, "color": "#dcdcdc", "desc": "고품질 소재로 제작된 상품입니다."},
-    {"id": 3, "name": "상품 3", "price": 25000, "color": "#d4d4d4", "desc": "트렌디한 디자인의 상품입니다."},
-    {"id": 4, "name": "상품 4", "price": 9000,  "color": "#e0e0e0", "desc": "합리적인 가격의 상품입니다."},
-    {"id": 5, "name": "상품 5", "price": 32000, "color": "#d8d8d8", "desc": "프리미엄 라인 상품입니다."},
-    {"id": 6, "name": "상품 6", "price": 15000, "color": "#e4e4e4", "desc": "베스트셀러 상품입니다."},
-    {"id": 7, "name": "상품 7", "price": 22000, "color": "#d0d0d0", "desc": "정성껏 만든 상품입니다."},
-    {"id": 8, "name": "상품 8", "price": 28000, "color": "#cacaca", "desc": "한정판 상품입니다."},
+    {"name": "상품 1", "price": 12000, "color": "#e8e8e8", "desc": "깔끔하고 세련된 디자인의 상품입니다."},
+    {"name": "상품 2", "price": 18000, "color": "#dcdcdc", "desc": "고품질 소재로 제작된 상품입니다."},
+    {"name": "상품 3", "price": 25000, "color": "#d4d4d4", "desc": "트렌디한 디자인의 상품입니다."},
+    {"name": "상품 4", "price": 9000,  "color": "#e0e0e0", "desc": "합리적인 가격의 상품입니다."},
+    {"name": "상품 5", "price": 32000, "color": "#d8d8d8", "desc": "프리미엄 라인 상품입니다."},
+    {"name": "상품 6", "price": 15000, "color": "#e4e4e4", "desc": "베스트셀러 상품입니다."},
+    {"name": "상품 7", "price": 22000, "color": "#d0d0d0", "desc": "정성껏 만든 상품입니다."},
+    {"name": "상품 8", "price": 28000, "color": "#cacaca", "desc": "한정판 상품입니다."},
 ]
 
-# ── 상품 데이터 읽기/쓰기 ──
+# ── Supabase API ──
+
+def sb_headers():
+    return {
+        "apikey": SB_KEY,
+        "Authorization": f"Bearer {SB_KEY}",
+        "Content-Type": "application/json",
+        "Prefer": "return=representation"
+    }
 
 def load_products():
-    if not os.path.exists(PRODUCTS_JSON):
-        save_products(DEFAULT_PRODUCTS)
-        return DEFAULT_PRODUCTS
-    with open(PRODUCTS_JSON, "r", encoding="utf-8") as f:
-        return json.load(f)
+    res = requests.get(f"{SB_URL}/rest/v1/products?select=*&order=id", headers=sb_headers())
+    return res.json() if res.ok else []
 
-def save_products(products):
-    # products.json 저장
-    with open(PRODUCTS_JSON, "w", encoding="utf-8") as f:
-        json.dump(products, f, ensure_ascii=False, indent=2)
-    # 웹사이트용 products-data.js 자동 재생성
-    js_lines = ["const products = ["]
-    for p in products:
-        js_lines.append(
-            f"  {{ id: {p['id']}, name: '{p['name']}', price: {p['price']}, "
-            f"color: '{p['color']}', desc: '{p['desc']}' }},"
-        )
-    js_lines.append("];\n")
-    with open(PRODUCTS_JS, "w", encoding="utf-8") as f:
-        f.write("\n".join(js_lines))
+def add_product(name, price, desc, color="#e0e0e0"):
+    data = {"name": name, "price": price, "desc": desc, "color": color}
+    res = requests.post(f"{SB_URL}/rest/v1/products", headers=sb_headers(), json=data)
+    return res.json()[0] if res.ok else None
+
+def delete_product(product_id):
+    res = requests.delete(f"{SB_URL}/rest/v1/products?id=eq.{product_id}", headers=sb_headers())
+    return res.ok
+
+def seed_defaults():
+    existing = load_products()
+    if existing:
+        return
+    for p in DEFAULT_PRODUCTS:
+        requests.post(f"{SB_URL}/rest/v1/products", headers=sb_headers(), json=p)
+    print("기본 상품 8개 Supabase에 삽입 완료")
 
 # ── 텔레그램 API ──
 
@@ -84,7 +90,6 @@ def handle(message):
     chat_id = message["chat"]["id"]
     text = message.get("text", "").strip()
 
-    # /start 또는 /도움말
     if text in ["/start", "/도움말"]:
         send(chat_id,
             "🛍 <b>쇼핑몰 관리 봇</b>\n\n"
@@ -96,7 +101,6 @@ def handle(message):
             "  예: /삭제 3"
         )
 
-    # /목록
     elif text.startswith("/목록"):
         products = load_products()
         if not products:
@@ -105,7 +109,6 @@ def handle(message):
         lines = [f"{p['id']}. <b>{p['name']}</b> — {p['price']:,}원" for p in products]
         send(chat_id, "\n".join(lines))
 
-    # /추가 이름 가격 설명
     elif text.startswith("/추가"):
         parts = text.split(" ", 3)
         if len(parts) < 3:
@@ -118,13 +121,12 @@ def handle(message):
             send(chat_id, "가격은 숫자만 입력하세요. 예: 25000")
             return
         desc = parts[3] if len(parts) > 3 else f"{name}입니다."
-        products = load_products()
-        new_id = max((p["id"] for p in products), default=0) + 1
-        products.append({"id": new_id, "name": name, "price": price, "color": "#e0e0e0", "desc": desc})
-        save_products(products)
-        send(chat_id, f"✅ '{name}' 상품 추가 완료! (번호: {new_id})\n웹사이트 새로고침하면 반영됩니다.")
+        result = add_product(name, price, desc)
+        if result:
+            send(chat_id, f"✅ '{name}' 상품 추가 완료!\n웹사이트 새로고침하면 바로 반영됩니다.")
+        else:
+            send(chat_id, "상품 추가 중 오류가 발생했습니다.")
 
-    # /삭제 번호
     elif text.startswith("/삭제"):
         parts = text.split()
         if len(parts) < 2:
@@ -140,8 +142,10 @@ def handle(message):
         if not target:
             send(chat_id, f"번호 {del_id}인 상품이 없습니다.\n/목록 으로 번호를 확인하세요.")
             return
-        save_products([p for p in products if p["id"] != del_id])
-        send(chat_id, f"✅ '{target['name']}' 삭제 완료!\n웹사이트 새로고침하면 반영됩니다.")
+        if delete_product(del_id):
+            send(chat_id, f"✅ '{target['name']}' 삭제 완료!\n웹사이트 새로고침하면 바로 반영됩니다.")
+        else:
+            send(chat_id, "삭제 중 오류가 발생했습니다.")
 
     else:
         send(chat_id, "/도움말 을 입력하면 사용법을 볼 수 있습니다.")
@@ -150,11 +154,11 @@ def handle(message):
 
 def main():
     print("=" * 40)
-    print("봇 시작됨!")
+    print("봇 시작됨! (Supabase 연동)")
     print("텔레그램에서 /start 를 입력하세요.")
     print("종료하려면 Ctrl+C")
     print("=" * 40)
-    load_products()  # products.json 없으면 기본 데이터로 초기화
+    seed_defaults()
     offset = None
     while True:
         updates = get_updates(offset)

@@ -118,13 +118,12 @@ function saveCart(cart) {
   localStorage.setItem('cart', JSON.stringify(cart));
 }
 
-function addToCart(productId) {
+function addToCart(product) {
   const cart = getCart();
-  const existing = cart.find(item => item.id === productId);
+  const existing = cart.find(item => item.id === product.id);
   if (existing) {
     existing.qty += 1;
   } else {
-    const product = products.find(p => p.id === productId);
     cart.push({ ...product, qty: 1 });
   }
   saveCart(cart);

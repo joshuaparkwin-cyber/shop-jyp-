@@ -29,24 +29,26 @@
     <p>© 2024 SHOP. All rights reserved.</p>
   </footer>
 
-  <script src="products-data.js"></script>
+  <script src="supabase-config.js"></script>
   <script src="app.js"></script>
   <script>
-    // 상품 카드 렌더링
-    const grid = document.getElementById('product-grid');
-    products.forEach(p => {
-      const card = document.createElement('div');
-      card.className = 'product-card';
-      card.onclick = () => location.href = `product.html?id=${p.id}`;
-      card.innerHTML = `
-        <div class="product-img" style="background-color: ${p.color}"></div>
-        <p class="product-name">${p.name}</p>
-        <p class="product-price">${p.price.toLocaleString()}원</p>
-      `;
-      grid.appendChild(card);
-    });
-
-    renderNav();
+    async function init() {
+      const products = await fetchProducts();
+      const grid = document.getElementById('product-grid');
+      products.forEach(p => {
+        const card = document.createElement('div');
+        card.className = 'product-card';
+        card.onclick = () => location.href = `product.html?id=${p.id}`;
+        card.innerHTML = `
+          <div class="product-img" style="background-color: ${p.color}"></div>
+          <p class="product-name">${p.name}</p>
+          <p class="product-price">${p.price.toLocaleString()}원</p>
+        `;
+        grid.appendChild(card);
+      });
+      renderNav();
+    }
+    init();
   </script>
 
 </body>

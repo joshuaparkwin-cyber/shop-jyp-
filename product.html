@@ -32,29 +32,32 @@
     <p>© 2024 SHOP. All rights reserved.</p>
   </footer>
 
-  <script src="products-data.js"></script>
+  <script src="supabase-config.js"></script>
   <script src="app.js"></script>
   <script>
-    const params = new URLSearchParams(location.search);
-    const product = products.find(p => p.id === parseInt(params.get('id')));
+    async function init() {
+      const params = new URLSearchParams(location.search);
+      const id = parseInt(params.get('id'));
+      const products = await fetchProducts();
+      const product = products.find(p => p.id === id);
 
-    if (product) {
-      document.title = product.name + ' — SHOP';
-      document.getElementById('detail-img').style.backgroundColor = product.color;
-      document.getElementById('detail-name').textContent = product.name;
-      document.getElementById('detail-price').textContent = product.price.toLocaleString() + '원';
-      document.getElementById('detail-desc').textContent = product.desc;
-      document.getElementById('btn-cart').addEventListener('click', () => {
-        addToCart(product.id);
-        alert('장바구니에 담았습니다!');
-        updateCartCount();
-      });
-    } else {
-      // 잘못된 id 접근 시 메인으로 이동
-      location.href = 'index.html';
+      if (product) {
+        document.title = product.name + ' — SHOP';
+        document.getElementById('detail-img').style.backgroundColor = product.color;
+        document.getElementById('detail-name').textContent = product.name;
+        document.getElementById('detail-price').textContent = product.price.toLocaleString() + '원';
+        document.getElementById('detail-desc').textContent = product.desc;
+        document.getElementById('btn-cart').addEventListener('click', () => {
+          addToCart(product);
+          alert('장바구니에 담았습니다!');
+          updateCartCount();
+        });
+      } else {
+        location.href = 'index.html';
+      }
+      renderNav();
     }
-
-    renderNav();
+    init();
   </script>
 
 </body>
