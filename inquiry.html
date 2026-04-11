@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>문의하기 — SHOP</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <div class="header-inner">
+      <a href="index.html" class="logo">SHOP</a>
+      <nav id="main-nav"></nav>
+    </div>
+  </header>
+
+  <div class="inquiry-container">
+
+    <!-- 문의 작성 폼 (일반 회원만) -->
+    <div id="write-section">
+      <h2 class="section-title">문의하기</h2>
+      <div class="inquiry-form">
+        <div class="form-group">
+          <label class="form-label">제목</label>
+          <input class="form-input" id="input-title" type="text" placeholder="문의 제목을 입력하세요">
+        </div>
+        <div class="form-group">
+          <label class="form-label">내용</label>
+          <textarea class="form-input form-textarea" id="input-content" placeholder="문의 내용을 입력하세요"></textarea>
+        </div>
+        <p class="form-error" id="write-error"></p>
+        <button class="btn btn-primary" onclick="handleSubmit()">문의 등록</button>
+      </div>
+    </div>
+
+    <!-- 문의 목록 -->
+    <div id="list-section">
+      <h2 class="section-title" id="list-title">내 문의 목록</h2>
+      <div id="inquiry-list"></div>
+    </div>
+
+  </div>
+
+  <footer>
+    <p>© 2024 SHOP. All rights reserved.</p>
+  </footer>
+
+  <script src="supabase-config.js"></script>
+  <script src="app.js"></script>
+  <script>
+    renderNav();
+
+    const user = getCurrentUser();
+    if (!user) {
+      alert('로그인 후 이용하실 수 있습니다.');
+      location.href = 'login.html';
+    }
+
+    // 관리자면 작성 폼 숨기고 제목 변경
+    if (user && user.role === 'admin') {
+      document.getElementById('write-section').style.display = 'none';
+      document.getElementById('list-title').textContent = '전체 문의 목록';
+    }
+
+    async function loadInquiries() {
+      const list = document.getElementById('inquiry-list');
+      list.innerHTML = '<p style="color:#aaa; padding:20px 0; font-size:14px;">불러오는 중...</p>';
+
+      const inquiries = isAdmin()
+        ? await sbGetAllInquiries()
+        : await sbGetMyInquiries(user.id);
+
+      if (inquiries.length === 0) {
+        list.innerHTML = '<div class="empty-admin">문의 내역이 없습니다.</div>';
+        return;
+      }
+
+      list.innerHTML = inquiries.map(inq => `
+        <div class="inquiry-item">
+          <div class="inquiry-header" onclick="toggleInquiry(${inq.id})">
+            <div style="display:flex; align-items:center;">
+              <span class="inquiry-status ${inq.answer ? 'status-done' : 'status-pending'}">
+                ${inq.answer ? '답변완료' : '답변대기'}
+              </span>
+              <span class="inquiry-title-text">${inq.title}</span>
+            </div>
+            <div class="inquiry-meta">
+              ${isAdmin() ? `<span>${inq.user_name} (${inq.user_id})</span>` : ''}
+              <span>${new Date(inq.created_at).toLocaleDateString('ko-KR')}</span>
+              <span>▾</span>
+            </div>
+          </div>
+          <div class="inquiry-body" id="body-${inq.id}" style="display:none;">
+            <div class="inquiry-content">${inq.content.replace(/\n/g, '<br>')}</div>
+            ${inq.answer
+              ? `<div class="inquiry-answer">
+                  <p class="answer-label">관리자 답변</p>
+                  <p class="answer-content">${inq.answer.replace(/\n/g, '<br>')}</p>
+                </div>`
+              : '<p style="color:#aaa; font-size:13px; margin-top:16px;">아직 답변이 등록되지 않았습니다.</p>'
+            }
+            ${isAdmin() ? `
+              <div style="margin-top:20px;">
+                <textarea class="form-input form-textarea" id="answer-${inq.id}" placeholder="답변을 입력하세요" style="min-height:90px;">${inq.answer || ''}</textarea>
+                <button class="btn btn-primary" style="margin-top:10px;" onclick="handleAnswer(${inq.id})">답변 등록</button>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function toggleInquiry(id) {
+      const body = document.getElementById('body-' + id);
+      body.style.display = body.style.display === 'none' ? 'block' : 'none';
+    }
+
+    async function handleSubmit() {
+      const title = document.getElementById('input-title').value.trim();
+      const content = document.getElementById('input-content').value.trim();
+      const errorEl = document.getElementById('write-error');
+      const btn = document.querySelector('#write-section .btn-primary');
+
+      if (!title) {
+        errorEl.textContent = '제목을 입력해주세요.';
+        errorEl.style.display = 'block';
+        return;
+      }
+      if (!content) {
+        errorEl.textContent = '내용을 입력해주세요.';
+        errorEl.style.display = 'block';
+        return;
+      }
+      errorEl.style.display = 'none';
+
+      btn.disabled = true;
+      btn.textContent = '등록 중...';
+
+      const ok = await sbAddInquiry(user.id, user.name, title, content);
+      if (ok) {
+        document.getElementById('input-title').value = '';
+        document.getElementById('input-content').value = '';
+        await loadInquiries();
+      }
+      btn.disabled = false;
+      btn.textContent = '문의 등록';
+    }
+
+    async function handleAnswer(inquiryId) {
+      const answer = document.getElementById('answer-' + inquiryId).value.trim();
+      if (!answer) return;
+      const btn = event.target;
+      btn.disabled = true;
+      btn.textContent = '저장 중...';
+      const ok = await sbAddAnswer(inquiryId, answer);
+      if (ok) await loadInquiries();
+      else {
+        btn.disabled = false;
+        btn.textContent = '답변 등록';
+      }
+    }
+
+    loadInquiries();
+  </script>
+
+</body>
+</html>

@@ -100,3 +100,23 @@ async function sbGetOrders() {
   const rows = await _sbGet('orders', '?select=*&order=id.desc');
   return rows || [];
 }
+
+// ── 문의 ──
+async function sbAddInquiry(userId, userName, title, content) {
+  const result = await _sbPost('inquiries', { user_id: userId, user_name: userName, title, content });
+  return !!result;
+}
+
+async function sbGetMyInquiries(userId) {
+  const rows = await _sbGet('inquiries', `?user_id=eq.${encodeURIComponent(userId)}&order=id.desc`);
+  return rows || [];
+}
+
+async function sbGetAllInquiries() {
+  const rows = await _sbGet('inquiries', '?select=*&order=id.desc');
+  return rows || [];
+}
+
+async function sbAddAnswer(inquiryId, answer) {
+  return await _sbPatch('inquiries', `?id=eq.${inquiryId}`, { answer });
+}
