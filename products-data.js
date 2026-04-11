@@ -7,5 +7,5 @@ const products = [
   { id: 6, name: '상품 6', price: 15000, color: '#e4e4e4', desc: '베스트셀러 상품입니다.' },
   { id: 7, name: '상품 7', price: 22000, color: '#d0d0d0', desc: '정성껏 만든 상품입니다.' },
   { id: 8, name: '상품 8', price: 28000, color: '#cacaca', desc: '한정판 상품입니다.' },
-  { id: 9, name: '에코백', price: 25000, color: '#e0e0e0', desc: '친환경 소재의 에코백입니다' },
+  { id: 10, name: '테스트상품', price: 9999, color: '#e0e0e0', desc: '테스트용입니다' },
 ];

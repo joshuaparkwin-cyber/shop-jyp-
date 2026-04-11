@@ -159,7 +159,13 @@ def main():
     print("종료하려면 Ctrl+C")
     print("=" * 40)
     seed_defaults()
-    offset = None
+    # 시작 시 기존 메시지 무시 (재시작 시 중복 처리 방지)
+    updates = get_updates()
+    if updates.get("result"):
+        offset = updates["result"][-1]["update_id"] + 1
+    else:
+        offset = None
+    print("준비 완료! 메시지 대기 중...")
     while True:
         updates = get_updates(offset)
         for update in updates.get("result", []):
