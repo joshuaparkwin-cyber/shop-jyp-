@@ -23,11 +23,32 @@ module.exports = async function handler(req, res) {
 `;
 
   try {
+    // 사용 가능한 모델 목록 조회
+    const modelsRes = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_KEY}`
+    );
+    const modelsData = await modelsRes.json();
+
+    if (!modelsRes.ok) {
+      return res.status(200).json({ reply: '[키 오류] ' + (modelsData.error?.message || '키를 확인해주세요.') });
+    }
+
+    // generateContent 지원 모델 중 첫 번째 선택
+    const available = (modelsData.models || []).filter(m =>
+      m.supportedGenerationMethods?.includes('generateContent')
+    );
+
+    if (available.length === 0) {
+      return res.status(200).json({ reply: '[오류] 사용 가능한 모델이 없습니다.' });
+    }
+
+    const modelName = available[0].name; // 예: models/gemini-xxx
+
     const lastMessage = messages[messages.length - 1]?.content || '';
     const prompt = systemPrompt + '\n\n고객 질문: ' + lastMessage;
 
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${GEMINI_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/${modelName}:generateContent?key=${GEMINI_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -44,7 +65,7 @@ module.exports = async function handler(req, res) {
     }
 
     const reply = data.candidates?.[0]?.content?.parts?.[0]?.text
-      || '[응답 없음] ' + JSON.stringify(data).slice(0, 100);
+      || '죄송합니다. 잠시 후 다시 시도해주세요.';
 
     res.status(200).json({ reply });
   } catch (e) {
