@@ -4,6 +4,10 @@ module.exports = async function handler(req, res) {
   const { messages } = req.body;
   const GEMINI_KEY = process.env.GEMINI_KEY;
 
+  if (!GEMINI_KEY) {
+    return res.status(500).json({ reply: 'API 키가 설정되지 않았습니다.' });
+  }
+
   // ═══════════════════════════════════════════════
   // 여기를 수정해서 챗봇이 아는 정보를 바꿀 수 있어요
   // ═══════════════════════════════════════════════
@@ -23,27 +27,37 @@ module.exports = async function handler(req, res) {
   // ═══════════════════════════════════════════════
 
   try {
+    const contents = [
+      { role: 'user', parts: [{ text: systemPrompt }] },
+      { role: 'model', parts: [{ text: '네, 안내해 드리겠습니다.' }] },
+      ...messages.map(m => ({
+        role: m.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: m.content }]
+      }))
+    ];
+
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: systemPrompt }] },
-          contents: messages.map(m => ({
-            role: m.role === 'assistant' ? 'model' : 'user',
-            parts: [{ text: m.content }]
-          }))
-        })
+        body: JSON.stringify({ contents })
       }
     );
 
     const data = await response.json();
+
+    if (!response.ok) {
+      console.error('Gemini error:', JSON.stringify(data));
+      return res.status(200).json({ reply: '죄송합니다. 잠시 후 다시 시도해주세요.' });
+    }
+
     const reply = data.candidates?.[0]?.content?.parts?.[0]?.text
       || '죄송합니다. 잠시 후 다시 시도해주세요.';
 
     res.status(200).json({ reply });
   } catch (e) {
+    console.error('Chat error:', e);
     res.status(500).json({ reply: '오류가 발생했습니다. 잠시 후 다시 시도해주세요.' });
   }
 };
