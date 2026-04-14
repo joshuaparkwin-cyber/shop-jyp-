@@ -59,6 +59,7 @@ function renderNav() {
     nav.innerHTML = `
       <a href="index.html">홈</a>
       <a href="cart.html">장바구니 <span id="cart-count"></span></a>
+      <a href="orders.html">주문내역</a>
       <a href="inquiry.html">문의</a>
       <a href="mypage.html">${user.name}님</a>
       <a href="#" class="nav-logout" onclick="logoutUser(); return false;">로그아웃</a>

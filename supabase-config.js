@@ -101,6 +101,11 @@ async function sbGetOrders() {
   return rows || [];
 }
 
+async function sbGetMyOrders(userId) {
+  const rows = await _sbGet('orders', `?user_id=eq.${encodeURIComponent(userId)}&order=id.desc`);
+  return rows || [];
+}
+
 // ── 문의 ──
 async function sbAddInquiry(userId, userName, title, content) {
   const result = await _sbPost('inquiries', { user_id: userId, user_name: userName, title, content });

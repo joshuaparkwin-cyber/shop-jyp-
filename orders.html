@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>주문 내역 — SHOP</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <div class="header-inner">
+      <a href="index.html" class="logo">SHOP</a>
+      <nav id="main-nav"></nav>
+    </div>
+  </header>
+
+  <div class="cart-container">
+    <h2 class="section-title">주문 내역</h2>
+    <div id="order-list"></div>
+  </div>
+
+  <footer>
+    <p>© 2024 SHOP. All rights reserved.</p>
+  </footer>
+
+  <script src="supabase-config.js"></script>
+  <script src="app.js"></script>
+  <script>
+    renderNav();
+
+    const user = getCurrentUser();
+    if (!user) {
+      alert('로그인 후 이용하실 수 있습니다.');
+      location.href = 'login.html';
+    }
+
+    async function renderOrders() {
+      const el = document.getElementById('order-list');
+      el.innerHTML = '<p style="color:#aaa; padding:20px 0; font-size:14px;">불러오는 중...</p>';
+
+      const orders = await sbGetMyOrders(user.id);
+
+      if (orders.length === 0) {
+        el.innerHTML = '<div class="empty-cart">주문 내역이 없습니다.</div>';
+        return;
+      }
+
+      el.innerHTML = orders.map(order => `
+        <div style="border:1px solid #e8e8e8; border-radius:10px; padding:24px; margin-bottom:16px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+            <span style="font-size:13px; color:#aaa;">${order.date}</span>
+            <span style="font-size:15px; font-weight:600; color:#111;">${order.total.toLocaleString()}원</span>
+          </div>
+          <div style="border-top:1px solid #f0f0f0; padding-top:16px;">
+            ${order.items.map(item => `
+              <div style="display:flex; justify-content:space-between; font-size:14px; color:#444; margin-bottom:8px;">
+                <span>${item.name} × ${item.qty}개</span>
+                <span>${(item.price * item.qty).toLocaleString()}원</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    renderOrders();
+  </script>
+
+</body>
+</html>
