@@ -163,7 +163,7 @@ def handle(message):
             return
 
         # Supabase Storage에 업로드
-        filename = f"{int(time.time())}_{info['name']}.jpg"
+        filename = f"product_{int(time.time())}.jpg"
         image_url = upload_image(img_res.content, filename)
         if not image_url:
             send(chat_id, "사진 업로드 실패. 텍스트 상품으로 등록하려면 /추가 명령어를 사용하세요.")
