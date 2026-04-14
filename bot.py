@@ -126,7 +126,7 @@ def parse_product_caption(caption):
         price = int(parts[1])
     except ValueError:
         return None
-    rest = parts[2] if len(parts) > 2 else f"{name}입니다."
+    rest = " ".join(parts[2:]) if len(parts) > 2 else f"{name}입니다."
     rest_parts = rest.rsplit(" ", 1)
     if len(rest_parts) == 2 and rest_parts[1] in ["1", "2", "3", "4"]:
         desc = rest_parts[0]
