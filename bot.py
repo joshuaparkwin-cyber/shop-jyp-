@@ -47,8 +47,8 @@ def load_products():
     res = requests.get(f"{SB_URL}/rest/v1/products?select=*&order=id", headers=sb_headers())
     return res.json() if res.ok else []
 
-def add_product(name, price, desc, color="#e0e0e0"):
-    data = {"name": name, "price": price, "desc": desc, "color": color}
+def add_product(name, price, desc, color="#e0e0e0", category="카테고리 1"):
+    data = {"name": name, "price": price, "desc": desc, "color": color, "category": category}
     res = requests.post(f"{SB_URL}/rest/v1/products", headers=sb_headers(), json=data)
     return res.json()[0] if res.ok else None
 
@@ -95,8 +95,9 @@ def handle(message):
             "🛍 <b>쇼핑몰 관리 봇</b>\n\n"
             "<b>/목록</b>\n"
             "  전체 상품 보기\n\n"
-            "<b>/추가 이름 가격 설명</b>\n"
-            "  예: /추가 에코백 25000 친환경 소재의 에코백\n\n"
+            "<b>/추가 이름 가격 설명 카테고리번호</b>\n"
+            "  예: /추가 에코백 25000 친환경 소재의 에코백 2\n"
+            "  카테고리번호: 1~4 (생략 시 카테고리 1)\n\n"
             "<b>/삭제 번호</b>\n"
             "  예: /삭제 3"
         )
@@ -106,13 +107,13 @@ def handle(message):
         if not products:
             send(chat_id, "등록된 상품이 없습니다.")
             return
-        lines = [f"{p['id']}. <b>{p['name']}</b> — {p['price']:,}원" for p in products]
+        lines = [f"{p['id']}. <b>{p['name']}</b> — {p['price']:,}원 [{p.get('category','카테고리 1')}]" for p in products]
         send(chat_id, "\n".join(lines))
 
     elif text.startswith("/추가"):
-        parts = text.split(" ", 3)
+        parts = text.split(" ", 4)
         if len(parts) < 3:
-            send(chat_id, "사용법: /추가 이름 가격 설명\n예: /추가 에코백 25000 친환경 소재입니다")
+            send(chat_id, "사용법: /추가 이름 가격 설명 카테고리번호\n예: /추가 에코백 25000 친환경 소재입니다 2")
             return
         name = parts[1]
         try:
@@ -120,10 +121,20 @@ def handle(message):
         except ValueError:
             send(chat_id, "가격은 숫자만 입력하세요. 예: 25000")
             return
-        desc = parts[3] if len(parts) > 3 else f"{name}입니다."
-        result = add_product(name, price, desc)
+
+        # 설명과 카테고리 분리
+        rest = parts[3] if len(parts) > 3 else f"{name}입니다."
+        rest_parts = rest.rsplit(" ", 1)
+        if len(rest_parts) == 2 and rest_parts[1] in ["1", "2", "3", "4"]:
+            desc = rest_parts[0]
+            category = f"카테고리 {rest_parts[1]}"
+        else:
+            desc = rest
+            category = "카테고리 1"
+
+        result = add_product(name, price, desc, category=category)
         if result:
-            send(chat_id, f"✅ '{name}' 상품 추가 완료!\n웹사이트 새로고침하면 바로 반영됩니다.")
+            send(chat_id, f"✅ '{name}' 상품 추가 완료! [{category}]\n웹사이트 새로고침하면 바로 반영됩니다.")
         else:
             send(chat_id, "상품 추가 중 오류가 발생했습니다.")
 

@@ -21,7 +21,13 @@
   </section>
 
   <main class="container">
-    <h2 class="section-title">전체 상품</h2>
+    <div class="category-tabs">
+      <button class="category-tab active" onclick="filterCategory('전체')">전체</button>
+      <button class="category-tab" onclick="filterCategory('카테고리 1')">카테고리 1</button>
+      <button class="category-tab" onclick="filterCategory('카테고리 2')">카테고리 2</button>
+      <button class="category-tab" onclick="filterCategory('카테고리 3')">카테고리 3</button>
+      <button class="category-tab" onclick="filterCategory('카테고리 4')">카테고리 4</button>
+    </div>
     <div class="product-grid" id="product-grid"></div>
   </main>
 
@@ -33,9 +39,24 @@
   <script src="app.js"></script>
   <script src="chat-widget.js"></script>
   <script>
+    let allProducts = [];
+    let currentCategory = '전체';
+
     async function init() {
-      const products = await fetchProducts();
+      allProducts = await fetchProducts();
+      renderProducts(allProducts);
+      renderNav();
+    }
+
+    function renderProducts(products) {
       const grid = document.getElementById('product-grid');
+      grid.innerHTML = '';
+
+      if (products.length === 0) {
+        grid.innerHTML = '<p style="color:#aaa; font-size:14px; padding:40px 0;">해당 카테고리에 상품이 없습니다.</p>';
+        return;
+      }
+
       products.forEach(p => {
         const card = document.createElement('div');
         card.className = 'product-card';
@@ -47,8 +68,22 @@
         `;
         grid.appendChild(card);
       });
-      renderNav();
     }
+
+    function filterCategory(category) {
+      currentCategory = category;
+
+      document.querySelectorAll('.category-tab').forEach(btn => {
+        btn.classList.toggle('active', btn.textContent === category);
+      });
+
+      const filtered = category === '전체'
+        ? allProducts
+        : allProducts.filter(p => (p.category || '카테고리 1') === category);
+
+      renderProducts(filtered);
+    }
+
     init();
   </script>
 

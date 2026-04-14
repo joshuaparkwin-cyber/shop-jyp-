@@ -423,6 +423,37 @@ nav a:hover {
   font-size: 15px;
 }
 
+/* ── 카테고리 탭 ── */
+.category-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+
+.category-tab {
+  padding: 8px 20px;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  background: #fff;
+  color: #666;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.category-tab:hover {
+  border-color: #999;
+  color: #333;
+}
+
+.category-tab.active {
+  background: #111;
+  border-color: #111;
+  color: #fff;
+}
+
 /* ── 문의 페이지 ── */
 .inquiry-container {
   max-width: 760px;
