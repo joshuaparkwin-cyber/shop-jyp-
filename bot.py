@@ -17,10 +17,11 @@ def load_env():
                 os.environ[key.strip()] = value.strip()
 
 load_env()
-TOKEN   = os.environ.get("TELEGRAM_TOKEN", "")
-SB_URL  = os.environ.get("SUPABASE_URL", "")
-SB_KEY  = os.environ.get("SUPABASE_KEY", "")
-API_URL = f"https://api.telegram.org/bot{TOKEN}"
+TOKEN      = os.environ.get("TELEGRAM_TOKEN", "")
+SB_URL     = os.environ.get("SUPABASE_URL", "")
+SB_KEY     = os.environ.get("SUPABASE_KEY", "")
+SB_SVC_KEY = os.environ.get("SUPABASE_SERVICE_KEY", SB_KEY)
+API_URL    = f"https://api.telegram.org/bot{TOKEN}"
 
 DEFAULT_PRODUCTS = [
     {"name": "상품 1", "price": 12000, "color": "#e8e8e8", "desc": "깔끔하고 세련된 디자인의 상품입니다."},
@@ -61,13 +62,14 @@ def delete_product(product_id):
 def upload_image(file_bytes, filename):
     url = f"{SB_URL}/storage/v1/object/product-images/{filename}"
     headers = {
-        "apikey": SB_KEY,
-        "Authorization": f"Bearer {SB_KEY}",
+        "apikey": SB_SVC_KEY,
+        "Authorization": f"Bearer {SB_SVC_KEY}",
         "Content-Type": "image/jpeg"
     }
     res = requests.post(url, headers=headers, data=file_bytes)
     if res.ok:
         return f"{SB_URL}/storage/v1/object/public/product-images/{filename}"
+    print(f"업로드 실패: {res.status_code} {res.text}")
     return None
 
 def seed_defaults():
