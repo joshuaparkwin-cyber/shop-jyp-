@@ -17,10 +17,10 @@ def load_env():
                 os.environ[key.strip()] = value.strip()
 
 load_env()
-TOKEN       = os.environ.get("TELEGRAM_TOKEN", "")
-SB_URL      = os.environ.get("SUPABASE_URL", "")
-SB_KEY      = os.environ.get("SUPABASE_KEY", "")
-API_URL     = f"https://api.telegram.org/bot{TOKEN}"
+TOKEN   = os.environ.get("TELEGRAM_TOKEN", "")
+SB_URL  = os.environ.get("SUPABASE_URL", "")
+SB_KEY  = os.environ.get("SUPABASE_KEY", "")
+API_URL = f"https://api.telegram.org/bot{TOKEN}"
 
 DEFAULT_PRODUCTS = [
     {"name": "상품 1", "price": 12000, "color": "#e8e8e8", "desc": "깔끔하고 세련된 디자인의 상품입니다."},
@@ -47,14 +47,28 @@ def load_products():
     res = requests.get(f"{SB_URL}/rest/v1/products?select=*&order=id", headers=sb_headers())
     return res.json() if res.ok else []
 
-def add_product(name, price, desc, color="#e0e0e0", category="카테고리 1"):
+def add_product(name, price, desc, color="#e0e0e0", category="카테고리 1", image_url=None):
     data = {"name": name, "price": price, "desc": desc, "color": color, "category": category}
+    if image_url:
+        data["image_url"] = image_url
     res = requests.post(f"{SB_URL}/rest/v1/products", headers=sb_headers(), json=data)
     return res.json()[0] if res.ok else None
 
 def delete_product(product_id):
     res = requests.delete(f"{SB_URL}/rest/v1/products?id=eq.{product_id}", headers=sb_headers())
     return res.ok
+
+def upload_image(file_bytes, filename):
+    url = f"{SB_URL}/storage/v1/object/product-images/{filename}"
+    headers = {
+        "apikey": SB_KEY,
+        "Authorization": f"Bearer {SB_KEY}",
+        "Content-Type": "image/jpeg"
+    }
+    res = requests.post(url, headers=headers, data=file_bytes)
+    if res.ok:
+        return f"{SB_URL}/storage/v1/object/public/product-images/{filename}"
+    return None
 
 def seed_defaults():
     existing = load_products()
@@ -84,20 +98,98 @@ def send(chat_id, text):
         json={"chat_id": chat_id, "text": text, "parse_mode": "HTML"}
     )
 
+def get_file_url(file_id):
+    res = requests.get(f"{API_URL}/getFile", params={"file_id": file_id})
+    if res.ok:
+        file_path = res.json()["result"]["file_path"]
+        return f"https://api.telegram.org/file/bot{TOKEN}/{file_path}"
+    return None
+
 # ── 명령어 처리 ──
+
+def parse_product_caption(caption):
+    """캡션에서 이름, 가격, 설명, 카테고리 파싱"""
+    parts = caption.strip().split(" ", 3)
+    if len(parts) < 2:
+        return None
+    name = parts[0]
+    try:
+        price = int(parts[1])
+    except ValueError:
+        return None
+    rest = parts[2] if len(parts) > 2 else f"{name}입니다."
+    rest_parts = rest.rsplit(" ", 1)
+    if len(rest_parts) == 2 and rest_parts[1] in ["1", "2", "3", "4"]:
+        desc = rest_parts[0]
+        category = f"카테고리 {rest_parts[1]}"
+    else:
+        desc = rest
+        category = "카테고리 1"
+    return {"name": name, "price": price, "desc": desc, "category": category}
 
 def handle(message):
     chat_id = message["chat"]["id"]
     text = message.get("text", "").strip()
 
+    # ── 사진 메시지 처리 ──
+    if "photo" in message:
+        caption = message.get("caption", "").strip()
+        if not caption:
+            send(chat_id,
+                "사진과 함께 상품 정보를 캡션으로 입력해주세요.\n"
+                "형식: 이름 가격 설명 카테고리번호\n"
+                "예: 에코백 25000 친환경 소재입니다 2"
+            )
+            return
+
+        info = parse_product_caption(caption)
+        if not info:
+            send(chat_id, "형식이 맞지 않습니다.\n예: 에코백 25000 친환경 소재입니다 2")
+            return
+
+        # 가장 큰 사진 선택
+        photo = message["photo"][-1]
+        file_url = get_file_url(photo["file_id"])
+        if not file_url:
+            send(chat_id, "사진을 가져오는 데 실패했습니다.")
+            return
+
+        # 사진 다운로드
+        img_res = requests.get(file_url)
+        if not img_res.ok:
+            send(chat_id, "사진 다운로드 실패.")
+            return
+
+        # Supabase Storage에 업로드
+        filename = f"{int(time.time())}_{info['name']}.jpg"
+        image_url = upload_image(img_res.content, filename)
+        if not image_url:
+            send(chat_id, "사진 업로드 실패. 텍스트 상품으로 등록하려면 /추가 명령어를 사용하세요.")
+            return
+
+        result = add_product(info["name"], info["price"], info["desc"],
+                             category=info["category"], image_url=image_url)
+        if result:
+            send(chat_id,
+                f"✅ '{info['name']}' 상품 추가 완료! [{info['category']}]\n"
+                f"사진도 함께 등록되었습니다.\n"
+                f"웹사이트 새로고침하면 바로 반영됩니다."
+            )
+        else:
+            send(chat_id, "상품 추가 중 오류가 발생했습니다.")
+        return
+
+    # ── 텍스트 명령어 처리 ──
     if text in ["/start", "/도움말"]:
         send(chat_id,
             "🛍 <b>쇼핑몰 관리 봇</b>\n\n"
+            "<b>📷 사진으로 상품 등록</b>\n"
+            "  사진 전송 + 캡션: 이름 가격 설명 카테고리번호\n"
+            "  예: 에코백 25000 친환경 에코백입니다 2\n\n"
             "<b>/목록</b>\n"
             "  전체 상품 보기\n\n"
             "<b>/추가 이름 가격 설명 카테고리번호</b>\n"
-            "  예: /추가 에코백 25000 친환경 소재의 에코백 2\n"
-            "  카테고리번호: 1~4 (생략 시 카테고리 1)\n\n"
+            "  예: /추가 에코백 25000 친환경 에코백 2\n\n"
             "<b>/삭제 번호</b>\n"
             "  예: /삭제 3"
         )
@@ -122,7 +214,6 @@ def handle(message):
             send(chat_id, "가격은 숫자만 입력하세요. 예: 25000")
             return
 
-        # 설명과 카테고리 분리
         rest = parts[3] if len(parts) > 3 else f"{name}입니다."
         rest_parts = rest.rsplit(" ", 1)
         if len(rest_parts) == 2 and rest_parts[1] in ["1", "2", "3", "4"]:
@@ -170,7 +261,6 @@ def main():
     print("종료하려면 Ctrl+C")
     print("=" * 40)
     seed_defaults()
-    # 시작 시 기존 메시지 무시 (재시작 시 중복 처리 방지)
     updates = get_updates()
     if updates.get("result"):
         offset = updates["result"][-1]["update_id"] + 1

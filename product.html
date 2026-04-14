@@ -44,7 +44,13 @@
 
       if (product) {
         document.title = product.name + ' — SHOP';
-        document.getElementById('detail-img').style.backgroundColor = product.color;
+        const imgEl = document.getElementById('detail-img');
+        imgEl.style.backgroundColor = product.color;
+        if (product.image_url) {
+          imgEl.style.backgroundImage = `url('${product.image_url}')`;
+          imgEl.style.backgroundSize = 'cover';
+          imgEl.style.backgroundPosition = 'center';
+        }
         document.getElementById('detail-name').textContent = product.name;
         document.getElementById('detail-price').textContent = product.price.toLocaleString() + '원';
         document.getElementById('detail-desc').textContent = product.desc;
