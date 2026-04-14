@@ -53,7 +53,14 @@ def add_product(name, price, desc, color="#e0e0e0", category="카테고리 1", i
     if image_url:
         data["image_url"] = image_url
     res = requests.post(f"{SB_URL}/rest/v1/products", headers=sb_headers(), json=data)
-    return res.json()[0] if res.ok else None
+    if res.ok:
+        result = res.json()
+        if result:
+            return result[0]
+        print(f"상품 추가 응답 비어있음: {res.text}")
+        return None
+    print(f"상품 추가 실패: {res.status_code} {res.text}")
+    return None
 
 def delete_product(product_id):
     res = requests.delete(f"{SB_URL}/rest/v1/products?id=eq.{product_id}", headers=sb_headers())
