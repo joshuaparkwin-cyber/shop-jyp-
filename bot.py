@@ -38,8 +38,8 @@ DEFAULT_PRODUCTS = [
 
 def sb_headers():
     return {
-        "apikey": SB_KEY,
-        "Authorization": f"Bearer {SB_KEY}",
+        "apikey": SB_SVC_KEY,
+        "Authorization": f"Bearer {SB_SVC_KEY}",
         "Content-Type": "application/json",
         "Prefer": "return=representation"
     }
